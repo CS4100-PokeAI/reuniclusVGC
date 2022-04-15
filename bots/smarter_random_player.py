@@ -11,8 +11,8 @@ from poke_env.player.player import Player
 from poke_env.environment.double_battle import DoubleBattle
 from poke_env.player.battle_order import DoubleBattleOrder, BattleOrder, DefaultBattleOrder
 from poke_env.player.random_player import RandomPlayer
-from helpers.doubles_utils import *
-from bots.random_doubles_player import RandomDoublesPlayer
+from reuniclusVGC.helpers.doubles_utils import *
+from reuniclusVGC.bots.random_doubles_player import RandomDoublesPlayer
 
 # Random Bot that doesn't self-hit
 # TODO: there are some errors when you put edgecase teams against edgecase teams

@@ -2,14 +2,11 @@ import sys
 import random
 import itertools
 
-sys.path.append(".") # will make "utils" callable from root
-sys.path.append("..") # will make "utils" callable from simulators
-
 from poke_env.player.player import Player
 from poke_env.player.random_player import RandomPlayer
 from poke_env.player.battle_order import DoubleBattleOrder, DefaultBattleOrder, BattleOrder
 from poke_env import utils
-from helpers.doubles_utils import *
+from reuniclusVGC.helpers.doubles_utils import *
 import numpy as np
 
 # Bot that tries to maximize the damage it does in the turn

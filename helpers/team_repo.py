@@ -1,6 +1,6 @@
 class TeamRepository:
-  teams = {
-    "common": """
+    teams = {
+        "common": """
 Tapu Fini @ Wiki Berry
 Level: 50
 Ability: Misty Surge
@@ -63,7 +63,8 @@ IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
 -  Close Combat
 -  Sucker Punch
 -  Protect
-""", "swampert": """
+""",
+        "swampert": """
 Zapdos-Galar @ Choice Scarf
 Level: 50
 Ability: Defiant
@@ -129,7 +130,8 @@ IVs: 31 HP / 0 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
 -  Thunderbolt
 -  Nasty Plot
 -  Protect
-""","regirock": """
+""",
+        "regirock": """
 Raichu @ Focus Sash
 Level: 50
 Ability: Lightning Rod
@@ -195,7 +197,8 @@ IVs: 31 HP / 0 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
 -  Air Slash
 -  Nasty Plot
 -  Protect
-""","garchomp": """
+""",
+        "garchomp": """
 Garchomp @ Weakness Policy
 Ability: Rough Skin
 Level: 50
@@ -260,7 +263,8 @@ IVs: 0 Atk
 - Muddy Water
 - Calm Mind
 - Protect
-""","mamoswine": """
+""",
+        "mamoswine": """
 Thundurus (M) @ Life Orb
 Ability: Defiant
 Level: 50
@@ -323,7 +327,8 @@ Jolly Nature
 - Smart Strike
 - Sacred Sword
 - Aerial Ace
-""","spectrier": """
+""",
+        "spectrier": """
 Spectrier @ Grassy Seed
 Ability: Grim Neigh
 Level: 50
@@ -387,7 +392,8 @@ IVs: 0 Atk
 - Dazzling Gleam
 - Follow Me
 - Protect
-""","nochoice": """
+""",
+        "nochoice": """
 Magikarp
 Ability: Swift Swim
 EVs: 8 HP
@@ -411,7 +417,8 @@ Ability: Natural Cure
 EVs: 8 SpA
 IVs: 0 Atk
 - Aromatherapy
-""","doubleturn": """
+""",
+        "doubleturn": """
 Magikarp
 Ability: Swift Swim
 EVs: 8 HP
@@ -447,7 +454,8 @@ IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
 -  Ice Punch
 -  High Horsepower
 -  Hammer Arm
-""","switch": """
+""",
+        "switch": """
 Landorus-Therian (M)
 Ability: Intimidate
 EVs: 48 Atk
@@ -485,7 +493,8 @@ Level: 50
 EVs: 12 HP
 - U-turn
 - Parting Shot
-""","edgecase": """
+""",
+        "edgecase": """
 Indeedee (M)
 Ability: Psychic Surge
 Level: 50
@@ -524,7 +533,8 @@ IVs: 0 Atk
 - Aromatic Mist
 - Magic Room
 - Wonder Room
-""", "speed": """
+""",
+        "speed": """
 Pelipper
 Ability: Keen Eye
 Level: 50
@@ -554,7 +564,8 @@ EVs: 28 HP
 - Nuzzle
 - Thunder Wave
 - Thunder
-""","pledge":"""
+""",
+        "pledge": """
 Incineroar
 Ability: Blaze
 Level: 50
@@ -584,7 +595,8 @@ Jolly Nature
 IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
 - Water Pledge
 
-""","sample":"""
+""",
+        "sample": """
 Incineroar
 Ability: Blaze
 Level: 50
@@ -621,4 +633,4 @@ EVs: 36 HP
 - Body Slam
 - Brick Break
 """
-  }
+    }

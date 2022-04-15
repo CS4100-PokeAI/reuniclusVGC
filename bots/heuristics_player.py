@@ -3,9 +3,6 @@ import sys
 import random
 from typing import Dict, List, Optional
 
-sys.path.append(".") # will make "utils" callable from root
-sys.path.append("..") # will make "utils" callable from simulators
-
 from poke_env.environment.field import Field
 from poke_env.environment.side_condition import SideCondition
 from poke_env.environment.status import Status
@@ -15,11 +12,11 @@ from poke_env.environment.move_category import MoveCategory
 from poke_env.environment.target_type import TargetType
 from poke_env.environment.volatile_status import VolatileStatus
 from poke_env.environment.battle import Battle
-from bots.random_doubles_player import RandomDoublesPlayer
+from reuniclusVGC.bots.random_doubles_player import RandomDoublesPlayer
 
 from poke_env.player.battle_order import DoubleBattleOrder, DefaultBattleOrder, BattleOrder
 
-from helpers.doubles_utils import *
+from reuniclusVGC.helpers.doubles_utils import *
 
 """ ============== Creating a player that moves based on Heuristics ==============
 This is not a finished bot
@@ -29,7 +26,7 @@ Possible options:
 - Optimize for the least damage taken (e.g. if another mon moves first, assume worst case scenario)
 - Optimize for KOs
 - Optimize for sweeps
-- Assume worst-case scenario pokemon is brought as a counter, and update when this isnt the case
+- Assume worst-case scenario pokemon is brought as a counter, and update when this isn't the case
 
 What I plan to do:
 - Take a "click buttons" team

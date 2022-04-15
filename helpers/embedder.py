@@ -1,10 +1,6 @@
 import sys
 from typing import Dict, List, Optional
 
-
-sys.path.append(".") # will make "utils" callable from root
-sys.path.append("..") # will make "utils" callable from simulators
-
 from poke_env.data import GEN_TO_MOVES, GEN_TO_POKEDEX
 from poke_env.environment.field import Field
 from poke_env.environment.side_condition import SideCondition
@@ -16,13 +12,13 @@ from poke_env.environment.target_type import TargetType
 from poke_env.environment.volatile_status import VolatileStatus
 from poke_env.environment.battle import Battle
 from poke_env.player.battle_order import *
-from helpers.doubles_utils import *
+from reuniclusVGC.helpers.doubles_utils import *
 
 class Embedder():
 
-    def __init__(self, gen=8, priorty=0):
+    def __init__(self, gen=8, priority=0):
 
-        # TODO: implement by creating priority tiers with which we should ebed different aspects of the game
+        # TODO: implement by creating priority tiers with which we should embed different aspects of the game
         self.priority = priority
         self.gen = gen
 
@@ -46,8 +42,8 @@ class Embedder():
 
         self._knowledge['Move'] = list(GEN_TO_MOVES[gen].keys())
         self._knowledge['Pokemon'] = list(GEN_TO_POKEDEX[gen].keys())
-        self._knowlege['Ability'] = list(set([
-            ability for sublist in map(lambda x: x.abilities.values(), GEN_TO_POKEDEX[gen].values()) for abillty in sublist
+        self._knowledge['Ability'] = list(set([
+            ability for sublist in map(lambda x: x.abilities.values(), GEN_TO_POKEDEX[gen].values()) for ability in sublist
             ]))
 
         # These are the lengths of the embeddings of each function. TODO: depends on the generation
@@ -57,7 +53,7 @@ class Embedder():
         self.BATTLE_LEN = 100
 
     # Returns an array of an embedded move; could be precomputed
-    def embed_move(self, move):
+    def _embed_move(self, battle, move):
         # If the move is None or empty, return a negative array (filled w/ -1's)
         if move is None or move.is_empty: return [-1]*self.MOVE_LEN
 
@@ -148,7 +144,7 @@ class Embedder():
         return [item for sublist in embeddings for item in sublist]
 
     # Returns an array of an embedded mon; could be precomputed per battle
-    def embed_mon(self, mon):
+    def _embed_mon(self, battle, mon):
         embeddings = []
 
         # OHE mons
@@ -161,7 +157,7 @@ class Embedder():
 
         # Append moves to embedding (and account for the fact that the mon might have <4 moves)
         for move in (list(mon.moves.values()) + [None, None, None, None])[:4]:
-            embeddings.append(self._embed_move(move))
+            embeddings.append(self._embed_move(battle, move))
 
         # Add whether the mon is active, the current hp, whether its fainted, its level, its weight and whether its recharging or preparing
         embeddings.append([
@@ -197,12 +193,12 @@ class Embedder():
         # Flatten all the lists into a Nx1 list
         return [item for sublist in embeddings for item in sublist]
 
-    def embed_opp_mon(self, mon):
+    def _embed_opp_mon(self, battle, mon):
         embeddings = []
 
         # Append moves to embedding (and account for the fact that the mon might have <4 moves, or we don't know of them)
         for move in (list(mon.moves.values()) + [None, None, None, None])[:4]:
-            embeddings.append(self._embed_move(move))
+            embeddings.append(self._embed_move(battle, move))
 
         # OHE mons
         embeddings.append([1 if mon == pokemon else 0 for pokemon in self._knowledge['Pokemon']])
@@ -248,8 +244,8 @@ class Embedder():
         return [item for sublist in embeddings for item in sublist]
 
     # Embeds the state of the battle in a X-dimensional embedding
-    # Embed mons (and whether theyre active)
-    # Embed opponent mons (and whether theyre active, theyve been brought or we don't know)
+    # Embed mons (and whether they're active)
+    # Embed opponent mons (and whether they're active, they've been brought or we don't know)
     # Then embed all the Fields, Side Conditions, Weathers, Player Ratings, # of Turns and the bias
     def embed_battle(self, battle):
         embeddings = []

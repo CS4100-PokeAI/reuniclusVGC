@@ -3,18 +3,16 @@ import asyncio
 import sys
 import random
 
-sys.path.append(".") # will make "bots" callable from root
-sys.path.append("..") # will make "bots" callable from simulators
-sys.path.append('/Users/cayman/Repositories/poke-env/src') #; https://stackoverflow.com/questions/4383571/importing-files-from-different-folder
-
 from poke_env.player.random_player import RandomPlayer
+
 from poke_env.player.utils import cross_evaluate
 from tabulate import tabulate
-from bots.random_doubles_player import RandomDoublesPlayer
-from bots.smarter_random_player import SmarterRandomPlayer
-from bots.simple_dqn_player import SimpleDQNPlayer
-from bots.max_damage_player import MaxDamagePlayer
-from helpers.team_repo import TeamRepository
+from reuniclusVGC.bots.random_doubles_player import RandomDoublesPlayer
+from reuniclusVGC.bots.smarter_random_player import SmarterRandomPlayer
+from reuniclusVGC.bots.simple_dqn_player import SimpleDQNPlayer
+from reuniclusVGC.bots.max_damage_player import MaxDamagePlayer
+from reuniclusVGC.helpers.team_repo import TeamRepository
+
 
 # To run from command line, run this in the root directory: python3.8 simulators/test_dqn.py
 def main():
@@ -39,6 +37,7 @@ def main():
     print("\033[94mResults against random players:\033[0m")
     plyr.evaluate_model(random_opp, 100)
     plyr.evaluate_model(max_opp, 100)
+
 
 if __name__ == "__main__":
     main()

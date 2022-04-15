@@ -4,16 +4,12 @@ import random
 import itertools
 import re
 
-sys.path.append('/Users/cayman/Repositories/poke-env/src') #; https://stackoverflow.com/questions/4383571/importing-files-from-different-folder
-sys.path.append(".") # will make "utils" callable from root
-sys.path.append("..") # will make "utils" callable from simulators
-
 from poke_env.player.player import Player
 from poke_env.player.random_player import RandomPlayer
 from poke_env.player.battle_order import DoubleBattleOrder, DefaultBattleOrder, BattleOrder
 from poke_env.environment.double_battle import DoubleBattle
 
-from helpers.doubles_utils import *
+from reuniclusVGC.helpers.doubles_utils import *
 from poke_env.utils import active_pokemon_to_showdown_target
 
 class IOPlayer(Player):
@@ -54,7 +50,7 @@ class IOPlayer(Player):
 
         print()
         print(f'\033[95mTurn Number {battle.turn} starting!\033[0m')
-        print(f"The battle can be found at http://localhost.psim.us/battle-{battle.format}-{battle.battle_tag}")
+        print(f"The battle can be found at http://localhost.psim.us/battle-{battle._format}-{battle.battle_tag}")
         print(f"Pokemon are: {mon1} and {mon2}")
         print(f"Opponents Mons are: {battle.opponent_active_pokemon[0].species} and {battle.opponent_active_pokemon[1].species}")
         print()

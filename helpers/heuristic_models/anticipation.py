@@ -1,19 +1,15 @@
 import sys
 from typing import Dict, List, Optional
 
-sys.path.append(".") # will make "helpers" callable from root
-sys.path.append("..") # will make "utils" callable from simulators
-sys.path.append("...") # will make "utils" callable from simulators
-
 from poke_env.environment.battle import Battle
 from poke_env.player.battle_order import *
-from helpers.doubles_utils import *
+from reuniclusVGC.helpers.doubles_utils import *
 
 # Predicts Moves of a mon given a team-builder, then battle history
 class AnticipationModel():
 
   def __init__(self, gen=8, priorty=0):
-    return None
+    pass
 
   # Predict moves based on teampreview
   def predict_prior(self, mon, observed_team):

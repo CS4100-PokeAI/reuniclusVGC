@@ -28,6 +28,7 @@ def statMod(statStage):
     elif statStage == -5: multiplier = 2.0/7
     elif statStage == 6: multiplier = 4
     elif statStage == -6: multiplier = 1.0/4
+    else: multiplier = 1
     return multiplier
 
 # We evaluate the performance on mon1 against mon2 by its type advantage

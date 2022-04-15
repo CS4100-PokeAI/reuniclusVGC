@@ -1,13 +1,9 @@
 import sys
 from typing import Dict, List, Optional
 
-sys.path.append(".") # will make "helpers" callable from root
-sys.path.append("..") # will make "utils" callable from simulators
-sys.path.append("...") # will make "utils" callable from simulators
-
 from poke_env.environment.battle import Battle
 from poke_env.player.battle_order import *
-from helpers.doubles_utils import *
+from reuniclusVGC.helpers.doubles_utils import *
 
 # Predicts Items of a mon given a team-builder, then battle history
 class FriskModel():
