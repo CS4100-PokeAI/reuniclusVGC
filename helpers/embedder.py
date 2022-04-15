@@ -22,8 +22,8 @@ class Embedder():
         self.priority = priority
         self.gen = gen
 
-        # Store all possible game-related knowledge, so that we can can embed battle states. The tuples are
-        # key where we retrieve the classes, the class, and whether poke_env supports returning the class (as opposed to string)
+        # Store all possible game-related knowledge, so that we can can embed battle states. The tuples are key where
+        # we retrieve the classes, the class, and whether poke_env supports returning the class (as opposed to string)
         self._knowledge = {}
         sets = [
             ('Field', Field, False),
@@ -43,7 +43,7 @@ class Embedder():
         self._knowledge['Move'] = list(GEN_TO_MOVES[gen].keys())
         self._knowledge['Pokemon'] = list(GEN_TO_POKEDEX[gen].keys())
         self._knowledge['Ability'] = list(set([
-            ability for sublist in map(lambda x: x.abilities.values(), GEN_TO_POKEDEX[gen].values()) for ability in sublist
+            ability for sublist in map(lambda x: x['abilities'].values(), GEN_TO_POKEDEX[gen].values()) for ability in sublist
             ]))
 
         # These are the lengths of the embeddings of each function. TODO: depends on the generation
@@ -53,7 +53,7 @@ class Embedder():
         self.BATTLE_LEN = 100
 
     # Returns an array of an embedded move; could be precomputed
-    def _embed_move(self, battle, move):
+    def _embed_move(self, move):
         # If the move is None or empty, return a negative array (filled w/ -1's)
         if move is None or move.is_empty: return [-1]*self.MOVE_LEN
 
@@ -157,7 +157,7 @@ class Embedder():
 
         # Append moves to embedding (and account for the fact that the mon might have <4 moves)
         for move in (list(mon.moves.values()) + [None, None, None, None])[:4]:
-            embeddings.append(self._embed_move(battle, move))
+            embeddings.append(self._embed_move(move))
 
         # Add whether the mon is active, the current hp, whether its fainted, its level, its weight and whether its recharging or preparing
         embeddings.append([
@@ -198,7 +198,7 @@ class Embedder():
 
         # Append moves to embedding (and account for the fact that the mon might have <4 moves, or we don't know of them)
         for move in (list(mon.moves.values()) + [None, None, None, None])[:4]:
-            embeddings.append(self._embed_move(battle, move))
+            embeddings.append(self._embed_move(move))
 
         # OHE mons
         embeddings.append([1 if mon == pokemon else 0 for pokemon in self._knowledge['Pokemon']])

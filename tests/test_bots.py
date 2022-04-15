@@ -11,19 +11,20 @@ import random
 from poke_env.player.random_player import RandomPlayer
 from poke_env.player.utils import cross_evaluate
 from tabulate import tabulate
-from bots.random_doubles_player import RandomDoublesPlayer
-from bots.smarter_random_player import SmarterRandomPlayer
-from bots.max_damage_player import MaxDamagePlayer
-from bots.heuristics_player import HeuristicsPlayer
-from bots.io_player import IOPlayer
-from helpers.team_repo import TeamRepository
+from reuniclusVGC.bots.random_doubles_player import RandomDoublesPlayer
+from reuniclusVGC.bots.smarter_random_player import SmarterRandomPlayer
+from reuniclusVGC.bots.max_damage_player import MaxDamagePlayer
+from reuniclusVGC.bots.heuristics_player import HeuristicsPlayer
+from reuniclusVGC.bots.io_player import IOPlayer
+from reuniclusVGC.helpers.team_repo import TeamRepository
 
 # To run from command line, run this in the root directory: python3.8 simulators/simulate_random_doubles.py
 async def main():
     print("\033[92m Starting script... \033[0m")
 
     # We create players that have teams which push the limits of edge cases
-    teams = ['nochoice', 'switch', 'edgecase', 'doubleturn', 'pledge', 'regirock', 'garchomp']
+    # teams = ['nochoice', 'switch', 'edgecase', 'doubleturn', 'pledge', 'regirock', 'garchomp']
+    teams = ['doubleturn', 'pledge']
     players = []
 
     for team in teams:

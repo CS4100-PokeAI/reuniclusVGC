@@ -1,20 +1,21 @@
 # -*- coding: utf-8 -*-
+import os
 import sys
 import random
 import time
 import json
 import traceback
 
-sys.path.append(".") # will make "bots" callable from root
-sys.path.append("..") # will make "bots" callable from simulators
-sys.path.append('/Users/cayman/Repositories/poke-env/src') #; https://stackoverflow.com/questions/4383571/importing-files-from-different-folder
-
+from poke_env.data import GEN_TO_POKEDEX
 from poke_env.environment.move import Move
-from helpers.embedder import Embedder
+from reuniclusVGC.helpers.embedder import Embedder
 
 def importMoves(gen=8):
     moves = {}
-    with open('/Users/cayman/Repositories/poke-env/src/poke_env/data/moves_by_gen/gen{0}_moves.json'.format(gen)) as f:
+    base_path = os.path.dirname(__file__)
+    path_from_project_root = 'src/poke_env/data/moves_by_gen/gen{0}_moves.json'.format(gen)
+    file_path = os.path.join(base_path, '..', '..', '..', path_from_project_root)
+    with open(file_path) as f:
         moves = json.load(f)
 
     return {move_id: Move(move_id) for move_id in moves}
@@ -94,7 +95,7 @@ def main():
     embedded_moves = dict()
 
     for move_id in moves:
-        embedded_moves[move_id] = embedder.embed_move(moves[move_id])
+        embedded_moves[move_id] = embedder._embed_move(moves[move_id])
 
     t2 = time.time()
     print("\tFinished in {0:.3f} seconds\n".format(t2 - t1))

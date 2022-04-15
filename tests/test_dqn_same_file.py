@@ -7,18 +7,14 @@ import os
 import numpy as np
 import datetime
 
-sys.path.append(".") # will make "bots" callable from root
-sys.path.append("..") # will make "bots" callable from simulators
-sys.path.append('/Users/cayman/Repositories/poke-env/src') #; https://stackoverflow.com/questions/4383571/importing-files-from-different-folder
-
 from poke_env.player.random_player import RandomPlayer
 from poke_env.player.utils import cross_evaluate
 from tabulate import tabulate
-from bots.random_doubles_player import RandomDoublesPlayer
-from bots.smarter_random_player import SmarterRandomPlayer
-from bots.simple_dqn_player import SimpleDQNPlayer
-from bots.max_damage_player import MaxDamagePlayer
-from helpers.team_repo import TeamRepository
+from reuniclusVGC.bots.random_doubles_player import RandomDoublesPlayer
+from reuniclusVGC.bots.smarter_random_player import SmarterRandomPlayer
+from reuniclusVGC.bots.simple_dqn_player import SimpleDQNPlayer
+from reuniclusVGC.bots.max_damage_player import MaxDamagePlayer
+from reuniclusVGC.helpers.team_repo import TeamRepository
 
 import wandb
 from wandb.keras import WandbCallback
@@ -58,7 +54,7 @@ class WinRatioCallback(tf.keras.callbacks.Callback):
         self.player.play_against(env_algorithm=dqn_evaluation, opponent=self.max_player, env_algorithm_kwargs={"dqn": self.dqn, "nb_episodes": num_battles})
         wandb.log({'epoch': epoch, 'pct_wins_against_max': self.player.n_won_battles*1./num_battles})
 
-        self.player.play_against(env_algorithm=dqn_evaluation, opponent=self.rand_player, env_algorithm_kwargs={"dqn": dqn, "nb_episodes": num_battles})
+        self.player.play_against(env_algorithm=dqn_evaluation, opponent=self.rand_player, env_algorithm_kwargs={"dqn": self.dqn, "nb_episodes": num_battles})
         wandb.log({'epoch': epoch, 'pct_wins_against_rand': self.player.n_won_battles*1./num_battles})
 
 # TODO: figure out why no dynamax
