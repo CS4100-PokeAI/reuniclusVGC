@@ -82,7 +82,7 @@ def train():
     }
 
     # Initialize a new wandb run; We can use os.environ['WANDB_MODE'] = 'dryrun' to not save wandb to cloud
-    wandb.init(config=config_defaults, project='reuniclusVGC_DQN')
+    wandb.init(config=config_defaults, entity="jfenton888", project="doom-desire-ai_DQN")
     config = wandb.config
 
     env_player = SimpleDQNPlayer(battle_format="gen8vgc2021", team=TeamRepository.teams[config.team])
@@ -91,7 +91,7 @@ def train():
     max_opp = MaxDamagePlayer(battle_format="gen8vgc2021", team=TeamRepository.teams[config.opponent_team])
 
     model = tf.keras.models.Sequential()
-    model.add(Dense(config.first_layer_nodes, activation=config.activation, input_shape=(1, 7790), kernel_initializer='he_uniform'))
+    model.add(Dense(config.first_layer_nodes, activation=config.activation, input_shape=env_player.embedding_space, kernel_initializer='he_uniform'))
     model.add(Flatten())
     if config.second_layer_nodes > 0: model.add(Dense(config.second_layer_nodes, activation=config.activation, kernel_initializer='he_uniform'))
     if config.third_layer_nodes > 0: model.add(Dense(config.third_layer_nodes, activation=config.activation, kernel_initializer='he_uniform'))
@@ -188,7 +188,7 @@ def sweep():
     }
 
     # wandb: ERROR Run m7gt74yz errored: RuntimeError("There is no current event loop in thread 'Thread-2'.",)
-    sweep_id = wandb.sweep(sweep_config, entity="caymansimpson", project="reuniclusVGC_DQN")
+    sweep_id = wandb.sweep(sweep_config, entity="jfenton888", project="doom-desire-ai_DQN")
     wandb.agent(sweep_id, train)
 
 # TODO: see if I can get random teams to battle

@@ -25,12 +25,20 @@ class TempRandomPlayer(Player):
         if filtered_orders: order = random.choice(filtered_orders)
         else: order = DefaultDoubleBattleOrder()
 
-        if battle.turn == 1 and battle.active_pokemon[0]:
-            print()
-            print("Len of Move Embeddings: ", len(self._plyr._embed_move(list(battle.active_pokemon[0].moves.values())[0])))
-            print("Len of Mon Embeddings: ", len(self._plyr._embed_mon(battle, battle.active_pokemon[0])))
-            print("Len of Opponent Mon Embeddings: ", len(self._plyr._embed_opp_mon(battle, battle.opponent_active_pokemon[0])))
-            print("Len of Battle Embeddings: ", len(self._plyr.embed_battle(battle)))
+        if battle.active_pokemon[0]:
+            print("Battle Turn: ", battle.turn)
+            print("    Len of Move Embeddings: ", len(self._plyr._embed_move(list(battle.active_pokemon[0].moves.values())[0])))
+            print("    Len of Mon Embeddings: ", len(self._plyr._embed_mon(battle, battle.active_pokemon[0])))
+            real_active = 0 if battle.opponent_active_pokemon[0] is not None else 1
+            print("    Len of Opponent Mon Embeddings: ", len(self._plyr._embed_opp_mon(battle, battle.opponent_active_pokemon[real_active])))
+            print("    Len of Battle Embeddings: ", len(self._plyr.embed_battle(battle)))
+
+        # if battle.turn == 1 and battle.active_pokemon[0]:
+        #     print()
+        #     print("Len of Move Embeddings: ", len(self._plyr._embed_move(list(battle.active_pokemon[0].moves.values())[0])))
+        #     print("Len of Mon Embeddings: ", len(self._plyr._embed_mon(battle, battle.active_pokemon[0])))
+        #     print("Len of Opponent Mon Embeddings: ", len(self._plyr._embed_opp_mon(battle, battle.opponent_active_pokemon[0])))
+        #     print("Len of Battle Embeddings: ", len(self._plyr.embed_battle(battle)))
 
         return order
 

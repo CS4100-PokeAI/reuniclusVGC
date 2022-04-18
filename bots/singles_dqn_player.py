@@ -3,9 +3,10 @@ import tensorflow as tf
 from datetime import datetime
 import sys
 import random
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from poke_env import utils
+from poke_env.environment.abstract_battle import AbstractBattle
 from poke_env.environment.double_battle import DoubleBattle
 from poke_env.player.env_player import EnvPlayer
 
@@ -20,7 +21,8 @@ from poke_env.environment.volatile_status import VolatileStatus
 from poke_env.environment.battle import Battle
 from reuniclusVGC.bots.random_doubles_player import RandomDoublesPlayer
 
-from poke_env.player.battle_order import DoubleBattleOrder, DefaultBattleOrder, BattleOrder, DefaultDoubleBattleOrder
+from poke_env.player.battle_order import DoubleBattleOrder, DefaultBattleOrder, BattleOrder, DefaultDoubleBattleOrder, \
+    ForfeitBattleOrder
 
 from reuniclusVGC.helpers.doubles_utils import *
 
@@ -35,8 +37,7 @@ from tensorflow.keras.optimizers import Adam
 
 
 # We define our RL player
-class SimpleDQNPlayer(EnvPlayer):
-
+class SinglesDQNPlayer(EnvPlayer):
     _EMBEDDING_SPACE = None
 
     def __init__(self, num_battles=10000, **kwargs):
@@ -55,10 +56,12 @@ class SimpleDQNPlayer(EnvPlayer):
         # * (4 moves * (3 possible targets) * dynamax + 2 switches) = 676
         # This is not entirely true since you can't choose the same mon to switch to both times, or you cant dynamax
         # two mons at the same time but it's easier to do it this way
-        action_space = list(range((4 * 3 * 2 + 2) * (4 * 3 * 2 + 2)))
+        action_space = list(range(4 * 2 + 5))
         self._ACTION_SPACE = action_space
 
-        self._EMBEDDING_SPACE = 7913
+        #
+        embedding_space = 2000
+        self._EMBEDDING_SPACE = (1, embedding_space)
 
         # Preprocess all the sets that we'll use to embed battle states.
         # The tuples are key where we retrieve the classes, the class, and whether poke_env supports returning the
@@ -82,8 +85,6 @@ class SimpleDQNPlayer(EnvPlayer):
                 self._knowledge[key] = list(map(lambda x: x.name.lower().replace("_", ""),
                                                 list(klass._member_map_.values())))
 
-        # print(self._knowledge)
-
         self._model = None
         self._create_model()
 
@@ -95,7 +96,8 @@ class SimpleDQNPlayer(EnvPlayer):
         init = tf.keras.initializers.RandomNormal(mean=.1, stddev=.02)
 
         # Input Layer; this shape is one that just works
-        self._model.add(Dense(512, input_shape=(1, 7814), activation="relu",
+        # TODO: Fix input shape for new embedding shape
+        self._model.add(Dense(512, input_shape=self._EMBEDDING_SPACE, activation="relu",
                               use_bias=False, kernel_initializer=init, name='first_hidden'))
 
         # Hidden Layers
@@ -142,93 +144,97 @@ class SimpleDQNPlayer(EnvPlayer):
 
         self._dqn.compile(Adam(lr=0.01), metrics=["mae"])
 
-    def _action_to_single_move(self, action: int, index: int, battle):
+    def _action_to_move(self, action: int, battle: AbstractBattle) -> BattleOrder:  # pyre-ignore
+        """Converts actions to move orders.
 
-        if action < 24:
-            # If either there is no mon or we're forced to switch, there's nothing to do
-            if not battle.active_pokemon[index] or battle.force_switch[index]: return None
-            dynamax, remaining = action % 2 == 1, int(action / 2)
-            if battle.active_pokemon[index] and int(remaining / 3) < len(battle.active_pokemon[index].moves):
-                move, initial_target = list(battle.active_pokemon[index].moves.values())[
-                                           int(remaining / 3)], remaining % 3
-
-                # If there's no target needed, we create the action as we normally would. It doesn't matter what our AI
-                # returned as target since there's only one possible target
-                if move.deduced_target not in ['adjacentAlly', 'adjacentAllyOrSelf', 'any', 'normal']:
-                    return BattleOrder(order=move, actor=battle.active_pokemon[index], dynamax=dynamax)
-
-                # If we are targeting a single mon, there are three cases: your other mon, the opponents mon or their
-                # other mon. 2 corresponds to your mon and 0/1 correspond to the opponents mons (index in
-                # opponent_active_mon) For the self-taret case, we ensure there's another mon on our side to hit
-                # (otherwise we leave action1 as None)
-                elif initial_target == 2:
-                    if battle.active_pokemon[1] is not None:
-                        return BattleOrder(order=move,
-                                           move_target=utils.active_pokemon_to_showdown_target(1 - index, opp=False),
-                                           actor=battle.active_pokemon[index], dynamax=dynamax)
-
-                # In the last case (if initial_target is 0 or 1), we target the opponent, and we do it regardless of
-                # what slot was chosen if there's only 1 mon left. In the following cases, we handle whether there are
-                # two mons left or one mon left
-                elif len(battle.opponent_active_pokemon) == 2 and all(battle.opponent_active_pokemon):
-                    return BattleOrder(order=move,
-                                       move_target=utils.active_pokemon_to_showdown_target(initial_target, opp=True),
-                                       actor=battle.active_pokemon[index], dynamax=dynamax)
-                elif len(battle.opponent_active_pokemon) < 2 and any(battle.opponent_active_pokemon):
-                    initial_target = 1 if battle.opponent_active_pokemon[0] is not None else 0
-                    return BattleOrder(order=move,
-                                       move_target=utils.active_pokemon_to_showdown_target(initial_target, opp=True),
-                                       actor=battle.active_pokemon[index], dynamax=dynamax)
-
-        elif 25 - action < len(battle.available_switches[index]):
-            return BattleOrder(order=battle.available_switches[index][25 - action], actor=battle.active_pokemon[index])
-
-        return None
-
-    # Takes the output of our policy (which chooses from a 676-dimensional array), and converts it into a battle order
-    def _action_to_move(self, action: int, battle: DoubleBattle) -> BattleOrder:  # pyre-ignore
-        """Converts actions to move orders. There are 676 actions - and they can be thought of as a 26 x 26 matrix
-        (first mon's possibilities and second mon's possibilities). This is not quite true because you cant choose the
-        same mon twice to switch to, but we handle that when determining the legality of the move choices later; If the
-        proposed action is illegal, a random legal move is performed.
         The conversion is done as follows:
+
+        action = -1:
+            The battle will be forfeited.
+        0 <= action < 4:
+            The actionth available move in battle.available_moves is executed.
+        4 <= action < 8:
+            The action - 4th available move in battle.available_moves is executed, with
+            z-move.
+        8 <= action < 12:
+            The action - 8th available move in battle.available_moves is executed, with
+            mega-evolution.
+        8 <= action < 12:
+            The action - 8th available move in battle.available_moves is executed, with
+            mega-evolution.
+        12 <= action < 16:
+            The action - 12th available move in battle.available_moves is executed,
+            while dynamaxing.
+        16 <= action < 22
+            The action - 16th available switch in battle.available_switches is executed.
+
+        If the proposed action is illegal, a random legal move is performed.
 
         :param action: The action to convert.
         :type action: int
         :param battle: The battle in which to act.
         :type battle: Battle
         :return: the order to send to the server.
-        :rtype: BattleOrder
+        :rtype: str
         """
-        row, col = action % 26, int(action / 26)
-        first_order = self._action_to_single_move(row, 0, battle) if battle.active_pokemon[0] else None
-        second_order = self._action_to_single_move(col, 1, battle) if battle.active_pokemon[1] else None
-
-        double_order = DoubleBattleOrder(first_order=first_order, second_order=second_order)
-        if DoubleBattleOrder.is_valid(battle, double_order):
-            return double_order
+        if action == -1:
+            return ForfeitBattleOrder()
+        elif (
+            action < 4
+            and action < len(battle.available_moves)
+            and not battle.force_switch
+        ):
+            return self.create_order(battle.available_moves[action])
+        elif (
+            not battle.force_switch
+            and battle.can_z_move
+            and battle.active_pokemon
+            and 0
+            <= action - 4
+            < len(battle.active_pokemon.available_z_moves)  # pyre-ignore
+        ):
+            return self.create_order(
+                battle.active_pokemon.available_z_moves[action - 4], z_move=True
+            )
+        elif (
+            battle.can_mega_evolve
+            and 0 <= action - 8 < len(battle.available_moves)
+            and not battle.force_switch
+        ):
+            return self.create_order(battle.available_moves[action - 8], mega=True)
+        elif (
+            battle.can_dynamax
+            and 0 <= action - 12 < len(battle.available_moves)
+            and not battle.force_switch
+        ):
+            return self.create_order(battle.available_moves[action - 12], dynamax=True)
+        elif 0 <= action - 16 < len(battle.available_switches):
+            return self.create_order(battle.available_switches[action - 16])
         else:
-            return DefaultDoubleBattleOrder()
+            return self.choose_random_move(battle)
 
     @property
     def action_space(self) -> List:
-        """
-        There are 210 possible moves w/out dynamax:
-        First mon's move possibilities:
-            4 moves * 3 possible targets (for moves w/ multiple/self-targeting we default to any target) + 3 switches
-        Second mon's move possibilities:
-            4 moves * 3 possible targets (for moves w/ multiple/self-targeting we default to any target) + 2 switches
-        First mon's move possibilities * Second mon's move possibilities = 210
+        """The action space for gen 8 single battles.
+
+        The conversion to moves is done as follows:
+
+            0 <= action < 4:
+                The actionth available move in battle.available_moves is executed.
+            4 <= action < 8:
+                The action - 4th available move in battle.available_moves is executed,
+                with z-move.
+            8 <= action < 12:
+                The action - 8th available move in battle.available_moves is executed,
+                with mega-evolution.
+            12 <= action < 16:
+                The action - 12th available move in battle.available_moves is executed,
+                while dynamaxing.
+            16 <= action < 22
+                The action - 16th available switch in battle.available_switches is
+                executed.
         """
         return self._ACTION_SPACE
-
-    @property
-    def embedding_space(self) -> Tuple[int, int]:
-        """
-        Return the size of the embedding for a gen-8 VGC battle
-        """
-
-        return (1, self._EMBEDDING_SPACE)
 
     @property
     def model(self) -> training.Model:
@@ -271,7 +277,7 @@ class SimpleDQNPlayer(EnvPlayer):
     def _embed_move(self, move):
 
         # If the move is None or empty, return a negative array (filled w/ -1's)
-        if move is None or move.is_empty: return [-1] * 180
+        if move is None or move.is_empty: return [-1] * 177
 
         embeddings = []
 
@@ -280,7 +286,7 @@ class SimpleDQNPlayer(EnvPlayer):
             move.base_power,
             int(move.breaks_protect),
             move.crit_ratio,
-            move.current_pp,
+            # move.current_pp,  # doom-desire-ai
             move.damage,
             move.drain,
             move.expected_hits,
@@ -373,7 +379,7 @@ class SimpleDQNPlayer(EnvPlayer):
 
         return [item for sublist in embeddings for item in sublist]
 
-    # We encode the opponent's mon in a 785-dimensional embedding
+    # We encode the agent's mon in a 779-dimensional embedding
     # We encode all the mons moves, whether it is active, it's current hp, whether it's fainted, its level,
     # weight, whether it's recharging, preparing, dynamaxed, its stats, boosts, status,
     # types and whether it's trapped or forced to switch out.
@@ -392,7 +398,7 @@ class SimpleDQNPlayer(EnvPlayer):
             mon.current_hp,
             int(mon.fainted),
             mon.level,
-            mon.weight,
+            # mon.weight,  # doom-desire-ai
             int(mon.must_recharge),
             1 if mon.preparing else 0,
             int(mon.is_dynamaxed),
@@ -409,19 +415,16 @@ class SimpleDQNPlayer(EnvPlayer):
         embeddings.append([1 if mon.type_1 == pokemon_type else 0 for pokemon_type in self._knowledge['PokemonType']])
         embeddings.append([1 if mon.type_2 == pokemon_type else 0 for pokemon_type in self._knowledge['PokemonType']])
 
-        # Add whether the mon is trapped or forced to switch. But first, find the index
-        index = None
-        if mon in battle.active_pokemon: index = 0 if battle.active_pokemon[0] == mon else 1
+        # Add whether the mon is trapped or forced to switch.
         embeddings.append([
-            1 if index and battle.trapped[index] else 0,
-            1 if index and battle.force_switch[index] else 0,
+            int(battle.trapped),
+            int(battle.force_switch),
         ])
 
         # Flatten all the lists into a Nx1 list
-        return_embedding = [item for sublist in embeddings for item in sublist]
-        return return_embedding
+        return [item for sublist in embeddings for item in sublist]
 
-    # We encode the opponent's mon in a 787-dimensional embedding
+    # We encode the opponent's mon in a 771-dimensional embedding
     # We encode all the mons moves, whether it's active, if we know it's sent, it's current hp, whether it's fainted,
     # its level, weight, whether it's recharging, preparing, dynamaxed, its base stats (because we don't know it's
     # IV/EV/Nature), boosts, status, types and whether it's trapped or forced to switch out. We currently don't encode
@@ -431,7 +434,6 @@ class SimpleDQNPlayer(EnvPlayer):
         embeddings = []
 
         # Append moves to embedding (and account for the fact that the mon might have <4 moves)
-
         for move in (list(mon.moves.values()) + [None, None, None, None])[:4]:
             embeddings.append(self._embed_move(move))
 
@@ -469,8 +471,7 @@ class SimpleDQNPlayer(EnvPlayer):
         ])
 
         # Flatten all the lists into a Nx1 list
-        return_embedding = [item for sublist in embeddings for item in sublist]
-        return return_embedding
+        return [item for sublist in embeddings for item in sublist]
 
     # Embeds the state of the battle in a 7814-dimensional embedding
     # Embed mons (and whether they're active)
@@ -483,23 +484,28 @@ class SimpleDQNPlayer(EnvPlayer):
         for mon in battle.sent_team.values():
             embeddings.append(self._embed_mon(battle, mon))
 
+        for mon in battle.opponent_team.values():  # Would work if we had perfect information
+            if mon is None:
+                print(battle.opponent_team)
+            embeddings.append(self._embed_mon(battle, mon))
+
         # Embed opponent's mons. teampreview_opponent_team has empty move slots while opponent_team has moves we remember.
         # We first embed opponent_active_pokemon, then ones we remember from the team, then the rest
-        embedded_opp_mons = set()
-        for mon in battle.opponent_active_pokemon:
-            if mon:
-                embeddings.append(self._embed_opp_mon(battle, mon))
-                embedded_opp_mons.add(mon.species)
-
-        for mon in battle.opponent_team.values():
-            if mon.species in embedded_opp_mons: continue
-            embeddings.append(self._embed_opp_mon(battle, mon))
-            embedded_opp_mons.add(mon.species)
-
-        for mon in battle.teampreview_opponent_team:
-            if mon in embedded_opp_mons: continue
-            embeddings.append(self._embed_opp_mon(battle, battle.teampreview_opponent_team[mon]))
-            embedded_opp_mons.add(mon)
+        # embedded_opp_mons = set()
+        # for mon in battle.opponent_active_pokemon:
+        #     if mon:
+        #         embeddings.append(self._embed_opp_mon(battle, mon))
+        #         embedded_opp_mons.add(mon.species)
+        #
+        # for mon in battle.opponent_team.values():
+        #     if mon.species in embedded_opp_mons: continue
+        #     embeddings.append(self._embed_opp_mon(battle, mon))
+        #     embedded_opp_mons.add(mon.species)
+        #
+        # for mon in battle.teampreview_opponent_team:
+        #     if mon in embedded_opp_mons: continue
+        #     embeddings.append(self._embed_opp_mon(battle, battle.teampreview_opponent_team[mon]))
+        #     embedded_opp_mons.add(mon)
 
         # Add Dynamax stuff
         embeddings.append(battle.can_dynamax + battle.opponent_can_dynamax + [battle.dynamax_turns_left,
